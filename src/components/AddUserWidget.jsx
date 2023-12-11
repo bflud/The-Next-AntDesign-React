@@ -32,7 +32,7 @@ const AddUserWidget = () => {
             email: '',
             birthDate: null,
         });
-        setInlineResult(null); // Reset inlineResult when closing the drawer
+        setInlineResult(null); 
     };
 
     const handleDateChange = (date) => {
@@ -49,12 +49,7 @@ const AddUserWidget = () => {
         dispatch(addUsers(newUser));
         onClose();
     };
-        const s3 = new AWS.S3({
-        accessKeyId: 'SEU_ACCESS_KEY_ID',
-        secretAccessKey: 'SEU_SECRET_ACCESS_KEY',
-        region: 'SUA_REGIAO',
-        // outros parâmetros, se necessário
-    });
+
     
     const handleAvatarChange = (e) => {
         const files = e.target.files;
