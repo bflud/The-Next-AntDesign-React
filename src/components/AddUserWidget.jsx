@@ -3,10 +3,10 @@ import { Drawer, DatePicker } from 'antd';
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { addUsers } from '../services/Toolkit/user.slice';
-import { v4 as uuid } from 'uuid';
 import { useRouter } from 'next/router';
-
-import { useEffect } from 'react';
+import '@pqina/pintura/pintura.css';
+import { openDefaultEditor } from '@pqina/pintura';
+import AWS from 'aws-sdk';
 
 const AddUserWidget = () => {
     const dispatch = useDispatch();
@@ -16,8 +16,9 @@ const AddUserWidget = () => {
         avatar: '',
         name: '',
         email: '',
-        birthDate: null, // Changing to a null value for the date
+        birthDate: null,
     });
+    const [inlineResult, setInlineResult] = useState(null);
 
     const showDrawer = () => {
         setOpen(true);
@@ -31,21 +32,60 @@ const AddUserWidget = () => {
             email: '',
             birthDate: null,
         });
+        setInlineResult(null); // Reset inlineResult when closing the drawer
     };
 
     const handleDateChange = (date) => {
         setNewUser({ ...newUser, birthDate: date });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (inlineResult) {
+            setNewUser({ ...newUser, avatar: inlineResult });
+        }
+
         dispatch(addUsers(newUser));
         onClose();
     };
-
+        const s3 = new AWS.S3({
+        accessKeyId: 'SEU_ACCESS_KEY_ID',
+        secretAccessKey: 'SEU_SECRET_ACCESS_KEY',
+        region: 'SUA_REGIAO',
+        // outros parâmetros, se necessário
+    });
+    
+    const handleAvatarChange = (e) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            const file = files[0];
+            const reader = new FileReader();
+            reader.onload = () => {
+                const newAvatarURL = reader.result;
+                setNewUser({ ...newUser, avatar: newAvatarURL });
+    
+                openDefaultEditor({
+                    src: newAvatarURL,
+                    onProcess: async (res) => {
+                        if (res.dest) {
+                            const blob = await fetch(res.dest).then((res) => res.blob());
+                            const editedImageURL = URL.createObjectURL(blob);
+                            setInlineResult(editedImageURL); // Salva a imagem editada no estado inlineResult
+                        }
+                    },
+                });
+            };
+            reader.readAsDataURL(file);
+        } else {
+            console.error('Nenhum arquivo selecionado');
+        }
+    };
     const handleRedirect = () => {
         router.push('/main').then(() => window.location.reload());
     };
+
+
 
     return (
         <div>
@@ -64,11 +104,10 @@ const AddUserWidget = () => {
                         <label>Avatar:</label>
                         <input
                             name='avatar'
-                            value={newUser.avatar}
-                            onChange={(e) => setNewUser({ ...newUser, avatar: e.target.value })}
+                            onChange={handleAvatarChange}
                             className='w-full p-2 outline-none border border-gray-300 rounded-md'
-                            type='text'
-                            placeholder='URL do avatar'
+                            type='file'
+                            accept='image/*'
                         />
                     </div>
                     <div className='my-5'>
